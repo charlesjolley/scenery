@@ -1,0 +1,11 @@
+{
+  "name": "scenery",
+  "version": "1.0.0",
+  "author": "Charles Jolley",
+  "dependencies": {
+    "async": "*",
+    "glob": "*",
+    "coffee-script": "1.6.x",
+    "memorystream-mcavage": "*"
+  }
+}
