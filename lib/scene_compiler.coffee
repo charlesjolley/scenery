@@ -221,9 +221,13 @@ SceneCompiler.registerExtension '.coffee',
   createBuildStream: (inputFilename, outputAssetName) ->
     extname = path.extname outputAssetName
     input = fs.readFileSync inputFilename, 'utf8'
-    compiled = CoffeeScript.compile input, 
-      filename:  inputFilename
-      sourceMap: yes
+    try
+      compiled = CoffeeScript.compile input, 
+        filename:  inputFilename
+        sourceMap: yes
+    catch e
+      message = "Compiler Error: #{e.message} at line #{e.location?.first_line} in #{inputFilename}\n\n"
+      throw new Error(message)
 
     if extname == '.js'
       outputExtname = path.extname outputAssetName
