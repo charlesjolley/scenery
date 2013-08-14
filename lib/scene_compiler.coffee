@@ -98,7 +98,7 @@ class ScenePackage
     if assetValue instanceof AssetPath
       absolutePath = assetValue.path
       return fs.createReadStream(absolutePath) if fs.existsSync(absolutePath)
-    else if 'string' == typeof assetValue
+    else if ('string' == typeof assetValue) or assetValue instanceof Buffer 
       stream = new MemoryStream [assetValue]
       stream.end()
       return stream
