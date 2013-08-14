@@ -1,2 +1,2 @@
 require('coffee-script');
-exports.SceneCompiler = require('./lib/scene_compiler');
+module.exports = require('./lib/scene_compiler');

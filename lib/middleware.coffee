@@ -28,7 +28,6 @@ FS   = require 'fs'
 ASYNC = require 'async'
 {SceneCompiler} = require './scene_compiler'
 
-EXPIRATION_LENGTH = 1 * 365 * 24 * 60 * 60  # 1 years
 URL_REGEX = /^\/?(.+?)(\/static\/([^\/]+))?\/?$/
 
 ExtractRequest = (req) ->
@@ -43,33 +42,16 @@ ExtractRequest = (req) ->
   [valid, sceneName, version]
 
 HandleScene = (sceneName, version, sceneRoot, opts, req, res, next) ->
-  # Internal method actually returns the contents of a scene. Expects an
-  # already normalized sceneName and absolute sceneRoot path.
-  contentType = opts.contentType or switch PATH.extname sceneRoot
-    when '.scene' then 'application/scene-zip'
-    when '.scenelib' then 'application/scenelib-zip'
-    else 'zip'
-
-  scenec = new SceneCompiler(sceneRoot, name: sceneName)
-  scenec.computeContentHash (err, digest) ->
-    return res.send(500, String(err)) if err
-    if version == 'current'
-      stableURL = PATH.resolve '/', req.originalUrl, 'static', digest
-      res.redirect stableURL
-    else if version == digest
-      zip = scenec.createZipStream()
-      zip.finalize (err, bytes) ->
-        return res.send(500, String(err)) if err
-        expirationDate = new Date(Date.now() + EXPIRATION_LENGTH*1000)
-        res.header 'Cache-Control', "public, max-age=#{EXPIRATION_LENGTH}"
-        res.header 'Expires', expirationDate.toUTCString()
-        res.header 'Content-Type', contentType
-        res.header 'Content-Disposition', "attachment; filename=\"#{PATH.basename sceneRoot}.zip\""
-        res.header 'Content-Length', bytes
-        zip.pipe res
-        zip.resume()
-
-    else next() # will 404 if no other handler is defined
+  SceneCompilerClass = opts.compiler or SceneCompiler
+  scenec = new SceneCompilerClass(sceneRoot, name: sceneName)
+  if version == 'current'
+    scenec.redirectToStableURL req.originalUrl, res, (err) ->
+      res.send(500, String(err)) if err
+  else
+    scenec.sendZippedScene version, res, (err) ->
+      if err
+        if err.code == 404 then next()
+        else res.send(err.code or 500, String(err))
 
 exports.mount = (scenesRoot, opts={}) ->
   ###
